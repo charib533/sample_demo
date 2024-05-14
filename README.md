@@ -123,3 +123,123 @@ console.log('MUI components have been generated.');
 
 
 
+
+
+
+import fs from 'fs';
+
+const figmaData = JSON.parse(fs.readFileSync('figma.json', 'utf8'));
+
+const figmaColorToCSS = (color: { r: number, g: number, b: number, a: number }): string => {
+  const r = Math.round(color.r * 255);
+  const g = Math.round(color.g * 255);
+  const b = Math.round(color.b * 255);
+  const a = color.a;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+const figmaNodeToMui = (node: any): string => {
+  switch (node.type) {
+    case 'FRAME':
+    case 'GROUP':
+      const children = node.children ? node.children.map((child: any) => figmaNodeToMui(child)).join('\n') : '';
+      const background = node.background ? `background: ${figmaColorToCSS(node.background[0].color)};` : '';
+      return `
+  <Box style={{
+    position: 'absolute',
+    top: ${node.absoluteBoundingBox.y}px,
+    left: ${node.absoluteBoundingBox.x}px,
+    width: ${node.absoluteBoundingBox.width}px,
+    height: ${node.absoluteBoundingBox.height}px,
+    ${background}
+  }}>
+    ${children}
+  </Box>
+`;
+    case 'TEXT':
+      return `
+  <Typography style={{
+    position: 'absolute',
+    top: ${node.absoluteBoundingBox.y}px,
+    left: ${node.absoluteBoundingBox.x}px,
+    fontSize: ${node.style.fontSize}px,
+    fontWeight: ${node.style.fontWeight},
+    color: '${figmaColorToCSS(node.fills[0].color)}',
+    fontFamily: '${node.style.fontFamily}',
+    lineHeight: '${node.style.lineHeight}px',
+  }}>
+    ${node.characters}
+  </Typography>
+`;
+    case 'RECTANGLE':
+      return `
+  <Box style={{
+    position: 'absolute',
+    top: ${node.absoluteBoundingBox.y}px,
+    left: ${node.absoluteBoundingBox.x}px,
+    width: ${node.absoluteBoundingBox.width}px,
+    height: ${node.absoluteBoundingBox.height}px,
+    backgroundColor: '${figmaColorToCSS(node.fills[0].color)}',
+    borderRadius: '${node.cornerRadius}px'
+  }} />
+`;
+    // Add cases for other node types as needed
+    default:
+      return '';
+  }
+};
+
+const generateMuiComponent = (node: any): string => {
+  return figmaNodeToMui(node);
+};
+
+const generateAppComponent = (rootNode: any): void => {
+  const appComponent = `
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+const App: React.FC = () => (
+  <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+    ${generateMuiComponent(rootNode)}
+  </div>
+);
+
+export default App;
+`;
+  fs.writeFileSync('App.tsx', appComponent);
+};
+
+generateAppComponent(figmaData.document);
+
+console.log('MUI components have been generated in App.tsx.');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
