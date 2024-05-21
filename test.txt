@@ -1,0 +1,87 @@
+Sure, let's break down the scenario step-by-step:
+
+1. **User Logs in on Server A:**
+   - A user logs into your application via Server A.
+   - Server A authenticates the user and creates a session object with user-specific details (e.g., user ID, login time, preferences).
+   - This session object is stored in Redis, a distributed, in-memory key-value store. The session might be stored with a key like `session:<session_id>`.
+
+2. **User Moves to Server B:**
+   - The user now interacts with Server B (perhaps due to load balancing or a failover mechanism).
+   - Server B does not have the session information locally since sessions are server-specific in a typical setup.
+
+3. **Fetching Session from Redis on Server B:**
+   - Server B receives a request from the user and identifies the user's session ID (typically from a cookie or token).
+   - Server B queries Redis using the session ID to fetch the session details.
+   - Redis returns the session object associated with that session ID.
+
+4. **Creating Local Session on Server B:**
+   - Server B takes the session details fetched from Redis and creates a local copy of the session.
+   - This might involve setting up in-memory structures or cache specific to Server B's session management system.
+
+5. **Updating Session Attributes:**
+   - During the user's interaction with Server B, some attributes of the session might get updated (e.g., last accessed time, user activity).
+   - Server B updates these session attributes locally.
+
+6. **Writing Updated Session Back to Redis:**
+   - To ensure consistency and availability across the distributed system, Server B writes the updated session details back to Redis.
+   - This ensures that any subsequent server can access the most recent session state.
+
+### Example Code Snippet:
+
+Here's a simplified pseudo-code to illustrate this process:
+
+```python
+# Server A - User logs in
+def login_user_on_server_a(user_credentials):
+    session = authenticate(user_credentials)
+    session_id = generate_session_id()
+    session_data = {
+        'user_id': session.user_id,
+        'login_time': session.login_time,
+        'preferences': session.preferences
+    }
+    # Store session in Redis
+    redis.set(f'session:{session_id}', session_data)
+    return session_id
+
+# Server B - Fetching session from Redis
+def fetch_and_update_session_on_server_b(session_id):
+    # Fetch session from Redis
+    session_data = redis.get(f'session:{session_id}')
+    if not session_data:
+        raise SessionNotFoundException("Session not found in Redis")
+    
+    # Create local session copy on Server B
+    local_session = create_local_session(session_data)
+    
+    # Simulate some updates to the session
+    local_session['last_accessed'] = current_timestamp()
+    
+    # Write updated session back to Redis
+    redis.set(f'session:{session_id}', local_session)
+
+# Helper functions
+def authenticate(user_credentials):
+    # Authentication logic here
+    pass
+
+def generate_session_id():
+    # Session ID generation logic here
+    pass
+
+def create_local_session(session_data):
+    # Local session creation logic
+    return session_data
+
+def current_timestamp():
+    # Returns current timestamp
+    pass
+```
+
+### Explanation:
+
+1. **login_user_on_server_a:** Authenticates the user, generates a session ID, and stores the session data in Redis.
+2. **fetch_and_update_session_on_server_b:** Fetches the session data from Redis using the session ID, creates a local copy of the session on Server B, updates the session details, and writes the updated session back to Redis.
+3. **Helper functions:** Include logic for authentication, session ID generation, creating local sessions, and getting the current timestamp.
+
+This approach ensures that session data is consistent and accessible across multiple servers in a distributed environment, leveraging Redis as a central session store.
