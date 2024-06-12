@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    environment {
+        ORACLE_HOST = credentials('oracle_host')
+        ORACLE_PORT = credentials('oracle_port')
+        ORACLE_SERVICE = credentials('oracle_service')
+        ORACLE_USER = credentials('oracle_user')
+        ORACLE_PASSWORD = credentials('oracle_password')
+        AWS_ACCESS_KEY_ID = credentials('aws_access_key_id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws_secret_access_key')
+        S3_BUCKET_NAME = credentials('s3_bucket_name')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup Python Environment') {
+            steps {
+                sh 'pip install boto3 cx_Oracle'
+            }
+        }
+
+        stage('Run Migration') {
+            steps {
+                sh 'python migrate_files.py'
+            }
+        }
+    }
+
+    post {
+        cleanup {
+            // Cleanup temporary files
+            sh 'rm -rf temp_local_directory'
+        }
+    }
+}
