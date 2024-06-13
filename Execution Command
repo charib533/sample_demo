@@ -1,0 +1,1 @@
+python script.py --oracle-host your_oracle_host --oracle-port your_oracle_port --oracle-service your_service_name --oracle-user your_username --oracle-password your_password --s3-bucket your_bucket_name --s3-folder your_folder_name
