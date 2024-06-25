@@ -33,3 +33,37 @@
       vars:
         key: "{{ new_key }}"
         value: "{{ new_value }}"
+
+
+
+
+
+
+
+
+
+
+---
+- name: Update EAPPS_LIST attribute in local.properties
+  hosts: my_servers
+  gather_facts: no
+  tasks:
+    - name: Ensure the local.properties file exists
+      ansible.builtin.file:
+        path: /apps/properties/local.properties
+        state: touch
+
+    - name: Update the EAPPS_LIST attribute
+      ansible.builtin.lineinfile:
+        path: /apps/properties/local.properties
+        regexp: '^EAPPS_LIST='
+        line: 'EAPPS_LIST={{ eapps_list }}'
+        create: yes
+
+    - name: Print the updated local.properties file
+      ansible.builtin.command: cat /apps/properties/local.properties
+      register: cat_output
+
+    - name: Display the updated local.properties file
+      ansible.builtin.debug:
+        var: cat_output.stdout
