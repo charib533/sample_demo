@@ -1,0 +1,35 @@
+---
+- name: Update local.properties file on remote server
+  hosts: my_servers
+  gather_facts: no
+  tasks:
+    - name: Ensure the local.properties file exists
+      ansible.builtin.file:
+        path: /apps/properties/local.properties
+        state: touch
+
+    - name: Read the current local.properties file
+      ansible.builtin.slurp:
+        src: /apps/properties/local.properties
+      register: local_properties_file
+
+    - name: Decode the local.properties file content
+      set_fact:
+        local_properties_content: "{{ local_properties_file.content | b64decode }}"
+
+    - name: Ensure the key=value pair is present in local.properties
+      ansible.builtin.lineinfile:
+        path: /apps/properties/local.properties
+        line: "{{ key }}={{ value }}"
+        state: present
+      vars:
+        key: "{{ new_key }}"
+        value: "{{ new_value }}"
+
+    - name: Update the local.properties file
+      ansible.builtin.copy:
+        content: "{{ local_properties_content | regex_replace('^' + key + '=.*$', key + '=' + value, multiline=True) }}"
+        dest: /apps/properties/local.properties
+      vars:
+        key: "{{ new_key }}"
+        value: "{{ new_value }}"
